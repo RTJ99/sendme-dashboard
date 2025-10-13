@@ -37,7 +37,9 @@ const paymentSchema = new mongoose.Schema({
   // Transaction Details
   transactionId: {
     type: String,
-    unique: true
+    index: true,
+    unique: true,
+    sparse: true
   },
   externalTransactionId: {
     type: String
@@ -133,7 +135,6 @@ paymentSchema.index({ driver: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ createdAt: -1 });
 paymentSchema.index({ periodStart: 1, periodEnd: 1 });
-paymentSchema.index({ transactionId: 1 });
 
 paymentSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
