@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff } from "lucide-react"
+import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function LoginPage() {
@@ -144,15 +145,12 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                Default admin credentials:
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Email: admin@sendme.com<br />
-                Password: admin123
-              </p>
-            </div>
+      {/* TODO: Add forgot password and reset password functionality */}
+      <div className="mt-6 text-center">
+        <Link href="/forgot-password" className="text-sm text-[#32443E] hover:underline">
+          Forgot password?
+        </Link>
+      </div>
           </CardContent>
         </Card>
       </div>

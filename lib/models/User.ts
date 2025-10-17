@@ -23,6 +23,8 @@ export interface IUser extends Document {
     paymentConfirmations: boolean;
     promotionalMessages: boolean;
   };
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
   getPublicProfile(): Partial<IUser>;
@@ -102,6 +104,14 @@ const userSchema = new Schema<IUser>({
       type: Boolean,
       default: false
     }
+  },
+  resetPasswordToken: {
+    type: String,
+    default: undefined
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: undefined
   },
   createdAt: {
     type: Date,

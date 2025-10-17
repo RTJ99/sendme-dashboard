@@ -38,6 +38,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<{ success: boolean; message: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (email: string) => Promise<{ success: boolean; message: string; data?: any }>;
+  resetPassword: (token: string, password: string) => Promise<{ success: boolean; message: string }>;
+  verifyResetToken: (token: string) => Promise<{ success: boolean; message: string; data?: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -208,6 +211,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const response = await apiClient.request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+
+      return { 
+        success: response.success, 
+        message: response.message || 'Failed to send reset email',
+        data: response.data
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to send reset email' 
+      };
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      const response = await apiClient.request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+      });
+
+      return { 
+        success: response.success, 
+        message: response.message || 'Failed to reset password' 
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to reset password' 
+      };
+    }
+  };
+
+  const verifyResetToken = async (token: string) => {
+    try {
+      const response = await apiClient.request(`/auth/reset-password?token=${token}`, {
+        method: 'GET',
+      });
+
+      return { 
+        success: response.success, 
+        message: response.message || 'Failed to verify reset token',
+        data: response.data
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Failed to verify reset token' 
+      };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -216,6 +277,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    forgotPassword,
+    resetPassword,
+    verifyResetToken,
   };
 
   return (
