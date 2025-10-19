@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb-serverless';
 import User from '@/lib/models/User';
 import { generateToken, createSuccessResponse, createErrorResponse } from '@/lib/auth';
 

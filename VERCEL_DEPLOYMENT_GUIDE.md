@@ -8,14 +8,40 @@ The issue you're experiencing is that:
 - ✅ User authentication works locally
 - ✅ JWT token is valid and user has admin role
 - ❌ API calls fail with 403 "Access denied. Admin privileges required" on Vercel
+- ❌ **Root Cause**: `Operation 'users.findOne()' buffering timed out after 10000ms`
 
-This suggests the `getUserFromRequest` function cannot find the user in the production database.
+This is a **MongoDB connection timeout issue** specific to Vercel's serverless environment.
 
 ## Root Causes
 
-1. **Database Connection Issues**: MongoDB connection might not be working on Vercel
-2. **Missing Admin User**: The admin user might not exist in the production database
-3. **Environment Variables**: JWT_SECRET or MONGODB_URI might not be set correctly
+1. **MongoDB Connection Timeout**: Vercel's serverless functions have cold start issues with MongoDB connections
+2. **Connection Pooling Issues**: Default MongoDB connection settings are not optimized for serverless
+3. **Missing Admin User**: The admin user might not exist in the production database
+4. **Environment Variables**: JWT_SECRET or MONGODB_URI might not be set correctly
+
+## Solution Implemented
+
+The code has been updated with:
+
+1. **Serverless-Optimized MongoDB Connection** (`lib/mongodb-serverless.ts`)
+   - Optimized connection options for Vercel
+   - Reduced connection pool size
+   - Faster timeout settings
+   - Connection retry logic
+
+2. **Enhanced Authentication with Retry Logic** (`lib/auth.ts`)
+   - Automatic reconnection on timeout
+   - Better error handling
+   - Connection validation before queries
+
+3. **API Route Wrapper** (`lib/api-wrapper.ts`)
+   - Ensures database connection before API execution
+   - Automatic retry on connection failures
+   - Consistent error handling
+
+4. **Vercel Configuration** (`vercel.json`)
+   - Extended function timeout (30 seconds)
+   - Environment variable configuration
 
 ## Solution Steps
 

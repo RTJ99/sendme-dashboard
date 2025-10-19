@@ -28,8 +28,16 @@ async function connectDB() {
     console.log('MongoDB: URI exists:', !!MONGODB_URI);
     console.log('MongoDB: URI starts with:', MONGODB_URI?.substring(0, 20) + '...');
     
+    // Optimized options for serverless environments like Vercel
     const opts = {
       bufferCommands: false,
+      bufferMaxEntries: 0,
+      maxPoolSize: 1, // Maintain up to 1 socket connection
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      family: 4, // Use IPv4, skip trying IPv6
+      connectTimeoutMS: 10000, // Give up initial connection after 10 seconds
+      heartbeatFrequencyMS: 10000, // Send a ping every 10 seconds
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

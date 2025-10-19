@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 import User, { IUser } from './models/User';
+import { ensureConnection, clearConnectionCache } from './mongodb-serverless';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRE = process.env.JWT_EXPIRE || '7d';
@@ -45,7 +46,14 @@ export const getUserFromRequest = async (request: NextRequest): Promise<IUser | 
       return null;
     }
     
-    // Check database connection
+    // Ensure database connection before querying
+    const isConnected = await ensureConnection();
+    if (!isConnected) {
+      console.error('Auth: Failed to establish database connection');
+      return null;
+    }
+    
+    // Check database connection with retry logic
     try {
       const user = await User.findById(decoded.userId).select('-password');
       console.log('Auth: User found:', !!user, user?.email, user?.role);
@@ -53,13 +61,41 @@ export const getUserFromRequest = async (request: NextRequest): Promise<IUser | 
       if (!user) {
         console.error('Auth: User not found in database for userId:', decoded.userId);
         // Try to find any admin users to verify database connection
-        const adminCount = await User.countDocuments({ role: 'admin' });
-        console.log('Auth: Total admin users in database:', adminCount);
+        try {
+          const adminCount = await User.countDocuments({ role: 'admin' });
+          console.log('Auth: Total admin users in database:', adminCount);
+        } catch (countError) {
+          console.error('Auth: Failed to count admin users:', countError);
+        }
       }
       
       return user;
     } catch (dbError) {
       console.error('Auth: Database error:', dbError);
+      
+      // If it's a timeout error, try to reconnect
+      if (dbError instanceof Error && dbError.message.includes('buffering timed out')) {
+        console.log('Auth: Detected buffering timeout, attempting to reconnect...');
+        try {
+          // Clear connection cache and try again
+          clearConnectionCache();
+          
+          // Ensure fresh connection
+          const isReconnected = await ensureConnection();
+          if (!isReconnected) {
+            console.error('Auth: Failed to reconnect to database');
+            return null;
+          }
+          
+          // Try the query again with a fresh connection
+          const user = await User.findById(decoded.userId).select('-password');
+          console.log('Auth: User found after reconnect:', !!user, user?.email, user?.role);
+          return user;
+        } catch (retryError) {
+          console.error('Auth: Retry failed:', retryError);
+        }
+      }
+      
       return null;
     }
   } catch (error) {

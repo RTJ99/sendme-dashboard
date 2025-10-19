@@ -1,13 +1,14 @@
 import { NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb-serverless';
 import User from '@/lib/models/User';
 import Driver from '@/lib/models/Driver';
 import Parcel from '@/lib/models/Parcel';
 import Application from '@/lib/models/Application';
 import Payment from '@/lib/models/Payment';
 import { getUserFromRequest, isAdmin, createSuccessResponse, createErrorResponse } from '@/lib/auth';
+import { withDatabaseConnection } from '@/lib/api-wrapper';
 
-export async function GET(request: NextRequest) {
+async function getDashboardStatsHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -133,3 +134,5 @@ export async function GET(request: NextRequest) {
     return createErrorResponse('Server error while fetching dashboard statistics', 500);
   }
 }
+
+export const GET = withDatabaseConnection(getDashboardStatsHandler);

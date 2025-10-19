@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb-serverless';
 import Driver from '@/lib/models/Driver';
 import { getUserFromRequest, isAdmin, createSuccessResponse, createErrorResponse } from '@/lib/auth';
+import { withDatabaseConnection } from '@/lib/api-wrapper';
 
-export async function GET(request: NextRequest) {
+async function getDriversHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -69,3 +70,5 @@ export async function GET(request: NextRequest) {
     return createErrorResponse('Server error while fetching drivers', 500);
   }
 }
+
+export const GET = withDatabaseConnection(getDriversHandler);
