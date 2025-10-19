@@ -39,10 +39,29 @@ export const getUserFromRequest = async (request: NextRequest): Promise<IUser | 
     const decoded = verifyToken(token);
     console.log('Auth: Token decoded, userId:', decoded.userId);
     
-    const user = await User.findById(decoded.userId).select('-password');
-    console.log('Auth: User found:', !!user, user?.email, user?.role);
+    // Check if JWT_SECRET is available
+    if (!JWT_SECRET) {
+      console.error('Auth: JWT_SECRET is not defined');
+      return null;
+    }
     
-    return user;
+    // Check database connection
+    try {
+      const user = await User.findById(decoded.userId).select('-password');
+      console.log('Auth: User found:', !!user, user?.email, user?.role);
+      
+      if (!user) {
+        console.error('Auth: User not found in database for userId:', decoded.userId);
+        // Try to find any admin users to verify database connection
+        const adminCount = await User.countDocuments({ role: 'admin' });
+        console.log('Auth: Total admin users in database:', adminCount);
+      }
+      
+      return user;
+    } catch (dbError) {
+      console.error('Auth: Database error:', dbError);
+      return null;
+    }
   } catch (error) {
     console.error('Auth: Error getting user from request:', error);
     return null;

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "init-db": "tsx scripts/init-db.ts"
+    "init-db": "tsx scripts/init-db.ts",
+    "setup-production": "tsx scripts/setup-production.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",
