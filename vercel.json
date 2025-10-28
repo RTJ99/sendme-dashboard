@@ -3,11 +3,5 @@
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "MONGODB_URI": "$MONGODB_URI",
-    "JWT_SECRET": "$JWT_SECRET",
-    "JWT_EXPIRE": "$JWT_EXPIRE",
-    "NEXT_PUBLIC_APP_URL": "$NEXT_PUBLIC_APP_URL"
   }
 }
