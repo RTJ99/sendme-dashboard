@@ -21,7 +21,6 @@ if (!cached) {
 // Connection options optimized for serverless
 const connectionOptions = {
   bufferCommands: false,
-  bufferMaxEntries: 0,
   maxPoolSize: 1, // Maintain up to 1 socket connection
   serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
   socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
