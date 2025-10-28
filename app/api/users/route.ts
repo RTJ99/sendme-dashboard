@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb-serverless';
 import User from '@/lib/models/User';
 import { getUserFromRequest, isAdmin, createSuccessResponse, createErrorResponse } from '@/lib/auth';
+import { withDatabaseConnection } from '@/lib/api-wrapper';
 
-export async function GET(request: NextRequest) {
+async function getUsersHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -63,7 +64,72 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function createUserHandler(request: NextRequest) {
+  try {
+    const user = await getUserFromRequest(request);
+    
+    if (!user || !isAdmin(user)) {
+      return createErrorResponse('Access denied. Admin privileges required.', 403);
+    }
+
+    await connectDB();
+
+    const { fullName, email, phoneNumber, password, role } = await request.json();
+
+    // Validation
+    if (!fullName || !email || !phoneNumber || !password) {
+      return createErrorResponse('All fields are required: fullName, email, phoneNumber, password', 400);
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return createErrorResponse('Please provide a valid email address', 400);
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return createErrorResponse('Password must be at least 6 characters long', 400);
+    }
+
+    // Role validation
+    const validRoles = ['admin', 'driver', 'client'];
+    if (role && !validRoles.includes(role)) {
+      return createErrorResponse('Invalid role. Must be admin, driver, or client', 400);
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [{ email }, { phoneNumber }]
+    });
+
+    if (existingUser) {
+      return createErrorResponse('User with this email or phone number already exists', 400);
+    }
+
+    // Create new user
+    const newUser = new User({
+      fullName,
+      email,
+      phoneNumber,
+      password,
+      role: role || 'client',
+      isVerified: true
+    });
+
+    await newUser.save();
+
+    return createSuccessResponse({
+      user: newUser.getPublicProfile()
+    }, 'User created successfully');
+
+  } catch (error) {
+    console.error('Create user error:', error);
+    return createErrorResponse('Server error while creating user', 500);
+  }
+}
+
+async function updateUserHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -115,7 +181,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+async function deleteUserHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -139,7 +205,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Prevent deleting the current admin user
-    if (existingUser._id.toString() === user._id.toString()) {
+    if (existingUser._id.toString() === (user._id as any).toString()) {
       return createErrorResponse('Cannot delete your own account', 400);
     }
 
@@ -153,3 +219,9 @@ export async function DELETE(request: NextRequest) {
     return createErrorResponse('Server error while deleting user', 500);
   }
 }
+
+// Export handlers with database connection wrapper
+export const GET = withDatabaseConnection(getUsersHandler);
+export const POST = withDatabaseConnection(createUserHandler);
+export const PUT = withDatabaseConnection(updateUserHandler);
+export const DELETE = withDatabaseConnection(deleteUserHandler);

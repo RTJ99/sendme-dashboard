@@ -1,9 +1,11 @@
 import { NextRequest } from 'next/server';
-import connectDB from '@/lib/mongodb';
+import connectDB from '@/lib/mongodb-serverless';
 import Parcel from '@/lib/models/Parcel';
+import User from '@/lib/models/User';
 import { getUserFromRequest, isAdmin, createSuccessResponse, createErrorResponse } from '@/lib/auth';
+import { withDatabaseConnection } from '@/lib/api-wrapper';
 
-export async function GET(request: NextRequest) {
+async function getParcelsHandler(request: NextRequest) {
   try {
     const user = await getUserFromRequest(request);
     
@@ -81,3 +83,139 @@ export async function GET(request: NextRequest) {
     return createErrorResponse('Server error while fetching parcels', 500);
   }
 }
+
+async function createParcelHandler(request: NextRequest) {
+  try {
+    const user = await getUserFromRequest(request);
+    
+    if (!user || !isAdmin(user)) {
+      return createErrorResponse('Access denied. Admin privileges required.', 403);
+    }
+
+    await connectDB();
+
+    const parcelData = await request.json();
+    const { sender, description, price, pickupLocation, dropoffLocation, paymentMethod } = parcelData;
+
+    // Validation
+    if (!sender || !description || !price || !pickupLocation || !dropoffLocation || !paymentMethod) {
+      return createErrorResponse('All required fields must be provided', 400);
+    }
+
+    // Check if sender exists
+    const existingSender = await User.findById(sender);
+    if (!existingSender) {
+      return createErrorResponse('Sender not found', 404);
+    }
+
+    // Create new parcel
+    const newParcel = new Parcel({
+      sender,
+      description,
+      price,
+      pickupLocation,
+      dropoffLocation,
+      paymentMethod,
+      status: 'pending'
+    });
+
+    await newParcel.save();
+    await newParcel.getParcelWithUsers();
+
+    return createSuccessResponse({
+      parcel: newParcel
+    }, 'Parcel created successfully');
+
+  } catch (error) {
+    console.error('Create parcel error:', error);
+    return createErrorResponse('Server error while creating parcel', 500);
+  }
+}
+
+async function updateParcelHandler(request: NextRequest) {
+  try {
+    const user = await getUserFromRequest(request);
+    
+    if (!user || !isAdmin(user)) {
+      return createErrorResponse('Access denied. Admin privileges required.', 403);
+    }
+
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
+    const parcelId = searchParams.get('id');
+    
+    if (!parcelId) {
+      return createErrorResponse('Parcel ID is required', 400);
+    }
+
+    const updateData = await request.json();
+    
+    // Remove fields that shouldn't be updated directly
+    delete updateData._id;
+    delete updateData.createdAt;
+    delete updateData.sender;
+
+    // Check if parcel exists
+    const existingParcel = await Parcel.findById(parcelId);
+    if (!existingParcel) {
+      return createErrorResponse('Parcel not found', 404);
+    }
+
+    // Update parcel
+    const updatedParcel = await Parcel.findByIdAndUpdate(
+      parcelId,
+      updateData,
+      { new: true, runValidators: true }
+    ).populate('sender', 'fullName email phoneNumber')
+     .populate('driver', 'fullName email phoneNumber');
+
+    return createSuccessResponse({
+      parcel: updatedParcel
+    }, 'Parcel updated successfully');
+
+  } catch (error) {
+    console.error('Update parcel error:', error);
+    return createErrorResponse('Server error while updating parcel', 500);
+  }
+}
+
+async function deleteParcelHandler(request: NextRequest) {
+  try {
+    const user = await getUserFromRequest(request);
+    
+    if (!user || !isAdmin(user)) {
+      return createErrorResponse('Access denied. Admin privileges required.', 403);
+    }
+
+    await connectDB();
+
+    const { searchParams } = new URL(request.url);
+    const parcelId = searchParams.get('id');
+    
+    if (!parcelId) {
+      return createErrorResponse('Parcel ID is required', 400);
+    }
+
+    // Check if parcel exists
+    const existingParcel = await Parcel.findById(parcelId);
+    if (!existingParcel) {
+      return createErrorResponse('Parcel not found', 404);
+    }
+
+    // Delete parcel
+    await Parcel.findByIdAndDelete(parcelId);
+
+    return createSuccessResponse({}, 'Parcel deleted successfully');
+
+  } catch (error) {
+    console.error('Delete parcel error:', error);
+    return createErrorResponse('Server error while deleting parcel', 500);
+  }
+}
+
+// Export handlers with database connection wrapper
+export const GET = withDatabaseConnection(getParcelsHandler);
+export const POST = withDatabaseConnection(createParcelHandler);
+export const PUT = withDatabaseConnection(updateParcelHandler);
+export const DELETE = withDatabaseConnection(deleteParcelHandler);

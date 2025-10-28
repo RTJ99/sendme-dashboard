@@ -6,9 +6,9 @@ import { ensureConnection, clearConnectionCache } from './mongodb-serverless';
  * This is specifically designed for serverless environments like Vercel
  */
 export function withDatabaseConnection<T extends any[]>(
-  handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
+  handler: (request: NextRequest, ...args: T) => Promise<Response>
 ) {
-  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+  return async (request: NextRequest, ...args: T): Promise<Response> => {
     try {
       // Ensure database connection before executing the handler
       const isConnected = await ensureConnection();

@@ -176,8 +176,28 @@ class ApiClient {
     });
   }
 
+  async createUser(userData: {
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    password: string;
+    role?: string;
+  }) {
+    return this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  }
+
+  async updateUser(id: string, userData: any) {
+    return this.request(`/users?id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData)
+    });
+  }
+
   async deleteUser(id: string) {
-    return this.request(`/users/${id}`, {
+    return this.request(`/users?id=${id}`, {
       method: 'DELETE'
     });
   }
@@ -225,8 +245,30 @@ class ApiClient {
     });
   }
 
+  async createDriver(driverData: {
+    userId: string;
+    vehicleType: string;
+    vehicleModel: string;
+    vehicleColor: string;
+    licensePlate: string;
+    licenseNumber: string;
+    [key: string]: any;
+  }) {
+    return this.request('/drivers', {
+      method: 'POST',
+      body: JSON.stringify(driverData)
+    });
+  }
+
+  async updateDriver(id: string, driverData: any) {
+    return this.request(`/drivers?id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(driverData)
+    });
+  }
+
   async deleteDriver(id: string) {
-    return this.request(`/drivers/${id}`, {
+    return this.request(`/drivers?id=${id}`, {
       method: 'DELETE',
     });
   }
@@ -262,6 +304,34 @@ class ApiClient {
     });
   }
 
+  async createParcel(parcelData: {
+    sender: string;
+    description: string;
+    price: number;
+    pickupLocation: any;
+    dropoffLocation: any;
+    paymentMethod: string;
+    [key: string]: any;
+  }) {
+    return this.request('/parcels', {
+      method: 'POST',
+      body: JSON.stringify(parcelData)
+    });
+  }
+
+  async updateParcel(id: string, parcelData: any) {
+    return this.request(`/parcels?id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(parcelData)
+    });
+  }
+
+  async deleteParcel(id: string) {
+    return this.request(`/parcels?id=${id}`, {
+      method: 'DELETE'
+    });
+  }
+
   async assignParcel(id: string, driverId: string) {
     return this.request(`/parcels/${id}/assign`, {
       method: 'PUT',
@@ -274,6 +344,7 @@ class ApiClient {
     page?: number;
     limit?: number;
     status?: string;
+    search?: string;
   } = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -282,11 +353,39 @@ class ApiClient {
       }
     });
 
-    return this.request(`/admin/applications?${searchParams.toString()}`);
+    return this.request(`/applications?${searchParams.toString()}`);
   }
 
   async getApplication(id: string) {
-    return this.request(`/admin/applications/${id}`);
+    return this.request(`/applications/${id}`);
+  }
+
+  async createApplication(applicationData: {
+    user: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string;
+    vehicleType: string;
+    licensePlate: string;
+    [key: string]: any;
+  }) {
+    return this.request('/applications', {
+      method: 'POST',
+      body: JSON.stringify(applicationData)
+    });
+  }
+
+  async updateApplication(id: string, applicationData: any) {
+    return this.request(`/applications?id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(applicationData)
+    });
+  }
+
+  async deleteApplication(id: string) {
+    return this.request(`/applications?id=${id}`, {
+      method: 'DELETE'
+    });
   }
 
   async reviewApplication(id: string, status: string, reviewNotes?: string, rejectionReason?: string) {
@@ -301,6 +400,8 @@ class ApiClient {
     page?: number;
     limit?: number;
     status?: string;
+    type?: string;
+    search?: string;
   } = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -309,7 +410,40 @@ class ApiClient {
       }
     });
 
-    return this.request(`/admin/payments?${searchParams.toString()}`);
+    return this.request(`/payments?${searchParams.toString()}`);
+  }
+
+  async getPayment(id: string) {
+    return this.request(`/payments/${id}`);
+  }
+
+  async createPayment(paymentData: {
+    driver: string;
+    amount: number;
+    paymentMethod: string;
+    type: string;
+    description: string;
+    periodStart: string;
+    periodEnd: string;
+    [key: string]: any;
+  }) {
+    return this.request('/payments', {
+      method: 'POST',
+      body: JSON.stringify(paymentData)
+    });
+  }
+
+  async updatePayment(id: string, paymentData: any) {
+    return this.request(`/payments?id=${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(paymentData)
+    });
+  }
+
+  async deletePayment(id: string) {
+    return this.request(`/payments?id=${id}`, {
+      method: 'DELETE'
+    });
   }
 
   async processPayment(id: string, status: string, transactionId?: string, failureReason?: string) {
